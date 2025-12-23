@@ -7,7 +7,9 @@ export const slack = new Hono()
 const SLACK_SINGING_SECRET = Deno.env.get("SLACK_SINGING_SECRET") ?? ""
 
 slack.use(async (c, next) => {
-  const reqBody = await (await cloneRawRequest(c.req)).text()
+  const rawreqBody = await (await cloneRawRequest(c.req)).arrayBuffer()
+  const reqBody = new TextDecoder('utf-8').decode(rawreqBody)
+
   const timestamp = Number(c.req.header('X-Slack-Request-Timestamp')) || 0 
   const slackSignature = c.req.header("x-slack-signature") || ""
 
@@ -17,7 +19,7 @@ slack.use(async (c, next) => {
     return c.text("Invalid timestamp")
   }
   const baseStringToSign = 'v0:' + timestamp + ':' + reqBody
-  const signature = createHmac('sha256', SLACK_SINGING_SECRET).update(baseStringToSign).digest("hex")
+  const signature = "v0=" + createHmac('sha256', SLACK_SINGING_SECRET).update(baseStringToSign).digest("hex")
   
   
   if (!safeCompare(signature, slackSignature)){
