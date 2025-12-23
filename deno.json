@@ -1,9 +1,10 @@
 {
   "imports": {
+    "@std/dotenv": "jsr:@std/dotenv@^0.225.5",
     "hono": "jsr:@hono/hono@^4.11.1"
   },
   "tasks": {
-    "start": "deno run --allow-net main.ts"
+    "start": "deno run --allow-net --allow-env main.ts"
   },
   "compilerOptions": {
     "jsx": "precompile",
