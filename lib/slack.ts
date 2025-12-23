@@ -5,6 +5,9 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 export const slack = new Hono()
 
 const SLACK_SINGING_SECRET = Deno.env.get("SLACK_SINGING_SECRET") ?? ""
+const SLACK_XOXB_TOKEN = Deno.env.get("SLACK_XOXB_TOKEN") ?? ""
+
+const URL_TO_UNFURL = 'http://joinmychannel.vic.wf/'
 
 slack.use(async (c, next) => {
   const rawreqBody = await (await cloneRawRequest(c.req)).arrayBuffer()
@@ -13,7 +16,7 @@ slack.use(async (c, next) => {
   const timestamp = Number(c.req.header('X-Slack-Request-Timestamp')) || 0 
   const slackSignature = c.req.header("x-slack-signature") || ""
 
-  console.log("Received slack req, ", reqBody)
+  console.log("Received slack req, ", c.req,'\n', reqBody)
   if ((Math.floor(Date.now() / 1000) - timestamp) > 60 * 5){
     console.log("rejecting for invalid timestamp")
     return c.text("Invalid timestamp")
@@ -34,11 +37,13 @@ slack.post("/events",async(c) => {
   const body: SlackEventRes = await c.req.json()
   c.status(200)
   console.log("got genuine event")
-  switch (body["type"]){
-    case "url_verification":
+  if(body.type == 'url_verification') {
       return c.text(body["challenge"])
-    case "event_callback":
-      return c.text('')
+  } else if (body.type == "event_callback") {
+
+    unfurl(body.event.unfurl_id, body.event.source, body.event.links[0].url)
+
+    return c.text('')
   }
   return c.text("Hello slack, you seem authentic")
 
@@ -52,8 +57,6 @@ slack.get('/', (c)=> {
 function safeCompare(a: string, b:string): boolean {
   const bufA = Buffer.from(a, 'utf-8')
   const bufB = Buffer.from(b, 'utf-8')
-
-  console.log(`comparing ${a} to ${b}`)//TODO REMOVE THIS IN PRODUCTION DO NOT LEAK ENV IN LOGS GNG
 
   if (bufA.length !== bufB.length) return false;
 
@@ -82,7 +85,7 @@ interface LinkSharedEvent extends EventCallback {
   message_ts: string
   unfurl_id: string
   thread_ts: string
-  source: string
+  source: 'conversations_history' | 'composer'
   links: {
     domain:string,
     url:string
@@ -92,3 +95,36 @@ interface LinkSharedEvent extends EventCallback {
 }
 
 type SlackEventRes = LinkSharedEvent | UrlVerificationCallback
+
+
+async function unfurl(unfurl_id: string, source: 'conversations_history' | 'composer', urlToUnfurl: string) {
+  const res = await fetch('https://slack.com/api/chat.unfurl',{
+    method: "POST",
+    body: JSON.stringify({
+      token: SLACK_XOXB_TOKEN,
+      unfurl_id,
+      source,
+      user_auth_required: false,
+      unfurls: {
+        [urlToUnfurl]: {
+          hide_color: false,
+          blocks:[
+            {
+  "type": "section",
+  "text": {
+    "type": "mrkdwn",
+    "text": "New Paid Time Off request from <example.com|Fred Enriquez>\n\n<https://example.com|View request>"
+  }
+}
+          ]
+        }
+      }
+    }),
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${SLACK_XOXB_TOKEN}`
+    }
+  })
+
+  console.log(await res.json())
+}
