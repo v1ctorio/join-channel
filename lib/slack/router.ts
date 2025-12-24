@@ -2,9 +2,10 @@ import { Hono } from 'hono'
 import { cloneRawRequest } from "hono/request"
 import { createHmac } from "node:crypto";
 import { safeCompare, SlackEventRes } from "./utils.ts";
-import { replyInteractionEphemeral, unfurlById } from './methods.ts';
-import config from '../../joinchannel.config.json' with { type: 'json' }
+import { postMessage, unfurlById } from './methods.ts';
+import rawConfig from '../../joinchannel.config.json' with { type: 'json' } 
 
+const config: Record<string, any> = rawConfig
 export const slack = new Hono()
 
 const SLACK_SINGING_SECRET = Deno.env.get("SLACK_SINGING_SECRET") ?? ""
@@ -62,12 +63,68 @@ slack.post('/interactivity', async (c) => {
   const payload = JSON.parse(body["payload"] as string)
   console.log(payload)
 
+  const action_id = payload["actions"][0]["action_id"]
 
   c.status(200)
 
-  if (config.confirmationMessage) {
-    replyInteractionEphemeral(payload["response_url"], config.confirmationMessage)
-  }
+
+    if (action_id === 'the-click-button') {
+
+      const user = payload["user"]
+
+
+      const text = (config["approvalMessage"]["text"] as string).replaceAll("{mention}",`<@${user.id}>`).replaceAll("{username}",user.username)
+
+      const ApprovalMsgBlocks: any[] = [
+		{
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": text
+			}
+		},
+		{
+			"type": "divider"
+		},
+		{
+			"type": "actions",
+			"elements": [
+				{
+					"type": "button",
+					"text": {
+						"type": "plain_text",
+						"text": config["approvalMessage"]["approveButtonCaption"],
+						"emoji": true
+					},
+					"value": user.id,
+					"action_id": "approve"
+				},
+				{
+					"type": "button",
+					"text": {
+						"type": "plain_text",
+						"text": config["approvalMessage"]["deleteButtonCaption"],
+						"emoji": true
+					},
+					"value": user.id,
+					"action_id": "delete"
+				}
+			]
+		}
+	];
+      postMessage(config["approvalMessage"]["channel"], ApprovalMsgBlocks)
+
+      if (config["confirmationMessage"]) {
+        postMessage(user.id, config["confirmationMessage"])
+      }
+
+
+      }
+      
+
+  
+
+
 
   return c.text("")
   
