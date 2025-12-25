@@ -87,3 +87,24 @@ export async function postMessage(channel:string, content: string | object) {
     console.log(await res.json())
 }
 
+export async function inviteUser(channel:string, user: string): Promise<boolean> {
+  const body = JSON.stringify({
+    channel,
+    users: user
+  })
+  
+
+  let res = await fetch('https://slack.com/api/conversations.invite', {
+    method: "POST",
+    body, 
+    headers
+  })
+  res = await res.json()
+
+  if (!res.ok) {
+    console.error(res)
+    return false
+  }
+  return true
+
+}

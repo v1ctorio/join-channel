@@ -1,11 +1,9 @@
+import config from '../env.ts'
 import { Hono } from 'hono'
 import { cloneRawRequest } from "hono/request"
 import { createHmac } from "node:crypto";
-import { safeCompare, SlackEventRes } from "./utils.ts";
-import { postMessage, unfurlById } from './methods.ts';
-import rawConfig from '../../joinchannel.config.json' with { type: 'json' } 
-
-const config: Record<string, any> = rawConfig
+import { BlockActionInteractionPayload, safeCompare, SlackEventRes } from "./utils.ts";
+import { inviteUser, postMessage, unfurlById } from './methods.ts';
 export const slack = new Hono()
 
 const SLACK_SINGING_SECRET = Deno.env.get("SLACK_SINGING_SECRET") ?? ""
@@ -69,7 +67,29 @@ slack.post('/interactivity', async (c) => {
 
 
     if (action_id === 'the-click-button') {
+        await handleRequestButtonPayload(payload)
+      } else if (action_id === 'approve') {
+       await handleApproveButtonPayload(payload) 
+      } else if (action_id === 'delete') {
+        //await handleDeleteButtonPayload(payload)
+      }
+      
 
+  
+
+
+
+  return c.text("")
+  
+})
+
+
+slack.get('/', (c)=> {
+  return c.text("I don't know why slack would make a GET request but sure, this request seems legit.")
+})
+
+
+async function handleRequestButtonPayload(payload:BlockActionInteractionPayload) {
       const user = payload["user"]
 
 
@@ -112,26 +132,25 @@ slack.post('/interactivity', async (c) => {
 			]
 		}
 	];
-      postMessage(config["approvalMessage"]["channel"], ApprovalMsgBlocks)
+      await postMessage(config["approvalMessage"]["channel"], ApprovalMsgBlocks)
 
       if (config["confirmationMessage"]) {
-        postMessage(user.id, config["confirmationMessage"])
+        await postMessage(user.id, config["confirmationMessage"])
       }
 
 
-      }
-      
+}
+
+async function handleApproveButtonPayload(payload: BlockActionInteractionPayload) {
+  const user = payload.actions[0]?.value as string
+
+
+  const succesfullyInvited = inviteUser(config.channel_id, user);
+
+  if (!succesfullyInvited) {
+    await postMessage(config["approvalMessage"]["channel"], 'Error inviting user. Make sure I am in the target channel.  Read the logs for the full error.')
+    return
+  }
 
   
-
-
-
-  return c.text("")
-  
-})
-
-
-slack.get('/', (c)=> {
-  return c.text("I don't know why slack would make a GET request but sure, this request seems legit.")
-})
-
+}

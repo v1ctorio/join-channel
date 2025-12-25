@@ -32,6 +32,54 @@ interface LinkSharedEvent extends EventCallback {
   }
 }
 
+
+
+// from https://docs.slack.dev/reference/interaction-payloads/block_actions-payload
+export interface BlockActionInteractionPayload {
+  type: 'block_actions';
+  team: {
+    id: string;
+    domain: string;
+  };
+  user: {
+    id: string;
+    username: string;
+    team_id: string;
+  };
+  api_app_id: string;
+  token: string;
+  container: {
+    type: string;
+    message_ts: string;
+    attachment_id: number;
+    channel_id: string;
+    is_ephemeral: boolean;
+    is_app_unfurl: boolean;
+  };
+  trigger_id: string;
+  channel: {
+    id: string;
+    name: string;
+  };
+  message: {
+    //do i even need ts
+    ts: string;
+  };
+  response_url: string;
+  actions: {
+    action_id: string;
+    block_id: string;
+    text: {
+      type: 'plain_text';
+      text: string;
+      emoji: boolean
+    }
+    value: string;
+    type: 'button' //ts doesn't use any more message components
+    action_ts: string
+  }[];
+} 
+
 export type SlackEventRes = LinkSharedEvent | UrlVerificationCallback
 
 
