@@ -3,7 +3,7 @@ import { Hono } from 'hono'
 import { cloneRawRequest } from "hono/request"
 import { createHmac } from "node:crypto";
 import { BlockActionInteractionPayload, safeCompare, SlackEventRes } from "./utils.ts";
-import { inviteUser, postMessage, unfurlById } from './methods.ts';
+import { deleteMessage, inviteUser, postMessage, unfurlById, updateMessage } from './methods.ts';
 export const slack = new Hono()
 
 const SLACK_SINGING_SECRET = Deno.env.get("SLACK_SINGING_SECRET") ?? ""
@@ -65,13 +65,13 @@ slack.post('/interactivity', async (c) => {
 
   c.status(200)
 
-
+//TODO. awaiting IS TOO SLOW AND SLACK GETS MAD IF YOU DON'T REPLY FAST ENOUGH but not doing so could kill the process on serverless
     if (action_id === 'the-click-button') {
-        await handleRequestButtonPayload(payload)
+        handleRequestButtonPayload(payload)
       } else if (action_id === 'approve') {
-       await handleApproveButtonPayload(payload) 
+        handleApproveButtonPayload(payload) 
       } else if (action_id === 'delete') {
-        //await handleDeleteButtonPayload(payload)
+        handleDeleteButtonPayload(payload)
       }
       
 
@@ -144,13 +144,45 @@ async function handleRequestButtonPayload(payload:BlockActionInteractionPayload)
 async function handleApproveButtonPayload(payload: BlockActionInteractionPayload) {
   const user = payload.actions[0]?.value as string
 
+  const oldMsg = payload.message
 
+  const text = oldMsg.blocks[0].text.text
   const succesfullyInvited = inviteUser(config.channel_id, user);
+
 
   if (!succesfullyInvited) {
     await postMessage(config["approvalMessage"]["channel"], 'Error inviting user. Make sure I am in the target channel.  Read the logs for the full error.')
     return
   }
 
+
+  const updatedBlocks: any[] = [
+		{
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": text
+			}
+		},
+		{
+			"type": "divider"
+		},
+		{
+      "type": "section",
+      "text": {
+        "type": "mrkdwn",
+        "text": `*${config.approvalMessage.approveButtonCaption}* was clicked.`
+      }
+    }
+	];
+
+  await updateMessage(payload.channel.id, oldMsg.ts, updatedBlocks)
+
+}
+
+async function handleDeleteButtonPayload(payload: BlockActionInteractionPayload) {
   
+  const oldMsg = payload.message
+
+  await deleteMessage(payload.channel.id, oldMsg.ts)
 }

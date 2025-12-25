@@ -64,6 +64,8 @@ export interface BlockActionInteractionPayload {
   message: {
     //do i even need ts
     ts: string;
+    channel: string;
+    blocks: any[];
   };
   response_url: string;
   actions: {

@@ -71,7 +71,7 @@ export async function replyInteractionEphemeral(response_url: string, text: stri
 }
 
 
-export async function postMessage(channel:string, content: string | object) {
+export async function postMessage(channel:string, content: string | object): Promise<string> {
     const body = JSON.stringify({
         blocks: typeof content == "object" ? content : undefined,
         markdown_text: typeof content == "string" ? content : undefined,
@@ -84,10 +84,13 @@ export async function postMessage(channel:string, content: string | object) {
         headers
     })
 
-    console.log(await res.json())
+    const j = await res.json()
+
+    return j["channel"] ? j["channel"] : ""
 }
 
 export async function inviteUser(channel:string, user: string): Promise<boolean> {
+  console.log(`Adding ${user} to ${channel}`)
   const body = JSON.stringify({
     channel,
     users: user
@@ -119,6 +122,7 @@ export async function deleteMessage(channel:string, message_ts: string) {
     body,
     headers
   })
+  console.log("Tried to delete ", message_ts)
   console.log(await res.json())
 }
 // here the channel ID for some reason can't be an user id AAAAAAA
