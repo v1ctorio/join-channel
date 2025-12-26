@@ -4,6 +4,7 @@ import { env } from "hono/adapter";
 import { Layout } from "./browser.tsx";
 import { streamText } from 'hono/streaming'
 import config from './env.ts'
+import { stream } from "asset:///node/undici/api.d.ts";
 const hono = new Hono()
 
 
@@ -66,13 +67,18 @@ hono.get("/hackclub/callback", async (c) => {
             return;
         }
         const token = hcatR.access_token
+        await stream.sleep(300)
 
         await stream.writeln("Successfully retrieved token. ")
+        await stream.sleep(100)
 
         await stream.writeln("Retrieving your slack ID...")
+        await stream.sleep(100)
 
         await stream.write("Hi there, ")
 
+        stream.sleep(500)
+        
         const uInfo = await HCAFetchUserInfo(token).catch(async e=> {
             console.log(e)
         })
@@ -83,6 +89,7 @@ hono.get("/hackclub/callback", async (c) => {
         await stream.writeln(uInfo.slack_id)
 
         await stream.writeln("Sending your channel join request...")
+        await stream.sleep(1000)
 
         //TODO actually send the channel join request
 
