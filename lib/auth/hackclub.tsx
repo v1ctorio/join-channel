@@ -1,19 +1,15 @@
 import { Hono } from "hono";
-import { EnvT } from "./env.ts";
+import { EnvT } from "../env.ts";
 import { env } from "hono/adapter";
-import { Layout } from "./browser.tsx";
+import { Layout } from "../browser.tsx";
 import { streamText } from "hono/streaming";
-import config from "./env.ts";
-import { ApprovalMessageBlocks } from "./slack/utils.ts";
-import { postMessage } from "./slack/methods.ts";
+import config from "../env.ts";
+import { ApprovalMessageBlocks } from "../slack/utils.ts";
+import { postMessage } from "../slack/methods.ts";
 const hono = new Hono();
 
 
-hono.get("/redirect/slack", (c) => {
-  return c.redirect("");
-});
-
-hono.get("/hackclub", (c) => {
+hono.get("/", (c) => {
   const { HCA_CLIENT_ID, HCA_REDIRECT_URI } = env<EnvT>(c);
 
   const oidc_link = new URL("https://auth.hackclub.com/oauth/authorize");
@@ -25,7 +21,7 @@ hono.get("/hackclub", (c) => {
   return c.redirect(oidc_link.href + "&scope=openid+slack_id");
 });
 
-hono.get("/hackclub/callback", (c) => {
+hono.get("/callback", (c) => {
   const { HCA_CLIENT_ID, HCA_CLIENT_SECRET, HCA_REDIRECT_URI, SLACK_XOXB_TOKEN } = env<EnvT>(c);
 
   const code = c.req.query("code");
