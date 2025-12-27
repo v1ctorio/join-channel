@@ -1,0 +1,10 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "join-my-channel",
+  "main": "cloudflare.ts",
+  "compatibility_date": "2025-12-27",
+  "assets":{
+    "directory": "public"
+  },
+  "compatibility_flags": ["nodejs_compat"]
+}

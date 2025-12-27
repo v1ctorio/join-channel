@@ -8,10 +8,10 @@ import { deleteMessage, inviteUser, postMessage, unfurlById, updateMessage } fro
 
 const slack = new Hono()
 
-const SLACK_SINGING_SECRET = Deno.env.get("SLACK_SINGING_SECRET") ?? ""
-
 
 slack.use(async (c, next) => {
+
+  const { SLACK_SINGING_SECRET } =  env<EnvT>(c)
   const rawreqBody = await (await cloneRawRequest(c.req)).arrayBuffer()
   const reqBody = new TextDecoder('utf-8').decode(rawreqBody)
 

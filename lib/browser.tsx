@@ -18,7 +18,7 @@ export const Layout: FC = (props) => {
 };
 
 export const getSite = createMiddleware(async (c) => {
-    const { HCA_CLIENT_ID, HCA_CLIENT_SECRET, HCA_REDIRECT_URI, SLACK_XOXB_TOKEN } = env<EnvT>(c);
+    const { HCA_CLIENT_ID, HCA_CLIENT_SECRET, } = env<EnvT>(c);
     
     return c.html(<Layout>
         <h1>{config.title}</h1>
